@@ -9,6 +9,7 @@ source('utils/calcIntermutDist.R')
 # where data is stored and output written
 fp <- '../data/'
 
+#
 # parameters of the algorithm
 gamma <- 8
 imd.factor <- 2
