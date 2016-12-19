@@ -1,5 +1,9 @@
 assignPvalues <- function(kat.regions, chrom.bps, bp.rate=NA) {
 
+                                        # annotate the hotspots:
+                                        # d.seg (density of breakpoints),
+                                        # rate.factor (density of breakpoint in hospots compared to chormosome)
+                                        # pvalue (probability of observint this many breakpoints, based on chromsomome expectation, binomial)
 
 if (is.na(bp.rate)) { # estimate the chromosome rate
     left.bp <- min(chrom.bps$pos)

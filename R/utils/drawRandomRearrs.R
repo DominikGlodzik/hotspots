@@ -27,13 +27,7 @@ drawRandomRearrs <- function(allBins, rearrs.df, binMeanCol, binSize) {
         bin.draws2 <- sample(nrow(  allBins), size=no.rearrs, replace=TRUE, prob=allBins[,binMeanCol]/sum(allBins[,binMeanCol])) # in case of translocation
 
                                         # sampling proportional to the nb draw
-        #nb.draw <- vector()
-        #for (bi in 1:nrow(  allBins)) { # draw from negative-bionmial distribution at each bin
-        #    nb.draw[bi] <- rnbinom(1, mu=allBins[bi, binMeanCol], size=2.2)
-        #}
-        #bin.draws <- sample(nrow(  allBins), size=no.rearrs , replace=TRUE, prob=nb.draw/sum(nb.draw))
-                                        #bin.draws2 <- sample(nrow(  allBins), size=no.rearrs, replace=TRUE, prob=nb.draw/sum(nb.draw)) # in case of translocation
-        
+
         bin.bp <- sample.int(binSize-1, no.rearrs, replace=TRUE) # random position within each bin
         
                                         # draw the first and second coordinate

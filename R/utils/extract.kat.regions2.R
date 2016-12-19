@@ -11,21 +11,26 @@ extract.kat.regions2 <- function (res, # segmentation result
                                   exp.col = NA # which column of allBins to use as expectation
                                   ) {
 
-
-                                        # ignore imd
+                                        # Extracts hotspots from a PCF segmentation.
+                                        # Args:
+                                        #   res: PCF segmentation
+                                        #   kmin.samples: minimum number of samples for a hotspots
+                                        #   doMerging: if merining neighbouring hotspots
+                                        #   bp.rate: baseline rate
+                                        #   obs.exp.thresh: threshold - observed to expected breakpoints
+                                        #   allBins: expected number of breakpoints per bin according to negative binomial
+                                        #   exp.col: relevant column of the regression data frame
     
 	segInterDist <-  res$yhat
-	
 	kat.regions.all = data.frame()	
-	
 	chr <- as.character(subs$chr[1])
-        
 	positions <- subs$pos
 
-
+        # positions where segmentation changes: possible starts of hotspots
         start.regions = which(segInterDist[-1] != segInterDist[-length(segInterDist)] ) +1 # endpoints between peaks
         start.regions <- c(1, start.regions)
-        
+
+         # positions where segmentation changes: possible ends of hotspots
         end.regions = which( segInterDist[-1] != segInterDist[-length(segInterDist)] )
         end.regions <- c( end.regions, length(segInterDist))
 
@@ -64,10 +69,7 @@ extract.kat.regions2 <- function (res, # segmentation result
         kat.regions.all$step.left <-  step.segInterDist.left[start.regions]
         kat.regions.all$step.right <-  step.segInterDist.right[end.regions]
             
-                                        # describe the kataegis regions with respect to expected rate
-
-            
-                                        
+                                       
         if ((!is.null(kat.regions.all)) && (nrow(kat.regions.all)>0)) {
             kat.regions.all <- assignPvalues(kat.regions.all, subs, bp.rate=bp.rate) # assign side info to the hotspots
 
@@ -82,6 +84,8 @@ extract.kat.regions2 <- function (res, # segmentation result
             }
 
             if (nrow(kat.regions.all)>0) { # if there are any hotspots left 
+
+                # merging of adjacent hotspots
                 if (doMerging) {
                     if(nrow(kat.regions.all)>1){
                         for(r in 2:nrow(kat.regions.all)){
@@ -120,6 +124,7 @@ extract.kat.regions2 <- function (res, # segmentation result
         
     }
 
+# Annotates the hotspots: cooridnates in chromosome, length, how many rearrangements, what type and from which samples
 hotspotInfo <- function(kat.regions.all, subs, segInterDist=c()) {
     if(nrow(kat.regions.all)>0){
         for(r in 1:nrow(kat.regions.all)){
