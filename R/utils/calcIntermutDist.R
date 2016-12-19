@@ -1,5 +1,8 @@
 calcIntermutDist <- function (subs.type, first.chrom.na = FALSE) {
+    
+    #   Calculate inter-mutation distances between adjacent breakpoints.
 
+    
     subs.type.processed <- data.frame()
     for (c in unique(subs.type$chr)) {
                                         # choose subs from only one chromosome at a time
