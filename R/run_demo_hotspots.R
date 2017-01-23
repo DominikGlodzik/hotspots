@@ -49,7 +49,7 @@ drawSegmentation(rs1.obs.df,  hotspots.obs.rs1 , fn=paste0(fp, 'obs.RS1.segmenta
 write.csv(hotspots.obs.rs1, file=paste0(fp, 'obs.RS1.hotspots.i=',imd.factor, '-g=',gamma,'.csv'), row.names = FALSE) # save table with hotspots
 
 # Hotspots - RS3 signature
-hotspots.obs.rs3 <- runLightPcf(rearr.df=rs3.obs.df , # RS1 rearrangements 
+hotspots.obs.rs3 <- runLightPcf(rearr.df=rs3.obs.df , # RS3 rearrangements 
                                 kmin=kmin.my,
                                 gamma=gamma,
                                 bg.rate=bp.rate.clust.sv[[3]]$gw.rate,
