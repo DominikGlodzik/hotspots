@@ -23,6 +23,7 @@ load(PRELOAD.REARR.PATH)
 # identify RS1 and RS3 rearrangements
 rs1.obs.df <- subset(r$sample.rearrs.all, Signature.SV1>0.5 & is.clustered==FALSE) # select rearrangements confidently attributed to signature RS1
 rs3.obs.df <- subset(r$sample.rearrs.all, Signature.SV3>0.5 & is.clustered==FALSE) # select rearrangements confidently attributed to signature RS3
+rs5.obs.df <- subset(r$sample.rearrs.all, Signature.SV5>0.5 & is.clustered==FALSE) # select rearrangements confidently attributed to signature RS3
 
 # load background model: negative binomial regression
 binSize <- 5e5 # bin size: 0.5 mb
@@ -49,7 +50,7 @@ drawSegmentation(rs1.obs.df,  hotspots.obs.rs1 , fn=paste0(fp, 'obs.RS1.segmenta
 write.csv(hotspots.obs.rs1, file=paste0(fp, 'obs.RS1.hotspots.i=',imd.factor, '-g=',gamma,'.csv'), row.names = FALSE) # save table with hotspots
 
 # Hotspots - RS3 signature
-hotspots.obs.rs3 <- runLightPcf(rearr.df=rs3.obs.df , # RS1 rearrangements 
+hotspots.obs.rs3 <- runLightPcf(rearr.df=rs3.obs.df , # RS3 rearrangements 
                                 kmin=kmin.my,
                                 gamma=gamma,
                                 bg.rate=bp.rate.clust.sv[[3]]$gw.rate,
@@ -64,3 +65,17 @@ hotspots.obs.rs3$hotspot.id <- paste0('RS3_chr',hotspots.obs.rs3$chr,'_', round(
 drawSegmentation(rs3.obs.df,  hotspots.obs.rs3 , fn=paste0(fp, 'obs.R3.segmentation.i=',imd.factor, '-g=',gamma,'.pdf'), 'observed RS3') # draw the rainfall plots 
 write.csv(hotspots.obs.rs3, file=paste0(fp, 'obs.RS3.hotspots.i=',imd.factor, '-g=',gamma,'.csv'), row.names = FALSE) # save table with hotspots    
 
+hotspots.obs.rs5 <- runLightPcf(rearr.df=rs5.obs.df , # RS5 rearrangements 
+                               kmin=kmin.my,
+                                gamma=gamma,
+                                bg.rate=bp.rate.clust.sv[[5]]$gw.rate,
+                                logScale=TRUE,
+                                doMerging=TRUE,
+                                obs.exp.thresh=imd.factor,
+                                allBins = allBins,
+                                exp.col='exp.nb.sv5',
+                                plot.path='../data/')
+
+hotspots.obs.rs5$hotspot.id <- paste0('RS3_chr',hotspots.obs.rs5$chr,'_', round(hotspots.obs.rs5$start.bp/1e6,1), 'Mb' ) # give IDs to each hotspots
+drawSegmentation(rs5.obs.df,  hotspots.obs.rs5 , fn=paste0(fp, 'obs.R5.segmentation.i=',imd.factor, '-g=',gamma,'.pdf'), 'observed RS5') # draw the rainfall plots 
+write.csv(hotspots.obs.rs5, file=paste0(fp, 'obs.RS5.hotspots.i=',imd.factor, '-g=',gamma,'.csv'), row.names = FALSE) # save table with hotspots    
