@@ -1,4 +1,4 @@
-prepareBinData <- function() {
+prepareBinData <- function(maxBins=Inf) {
 	
 	# design the bins: 500kb bins every 250mb
     binList <- list()
@@ -64,8 +64,13 @@ prepareBinData <- function() {
                      )
 	overlaps.rep.domains <- as.data.frame(findOverlaps(gr.allBins, gr.timing ))
 
+	# down-sample the bins
+	if (maxBins!=Inf) {
+		allBins <- allBins[sample(nrow(allBins), maxBins),]
+	}
+
 	# Ssummarize all bins
-    for (bi in 1:nrow(allBins)) {
+    for (bi in 1:min(maxBins,nrow(allBins))) {
 		allBins$highExpGenes[bi] <- sum(coverage.expr.genes [[paste0('chr', allBins$chr[bi])]][allBins$chromStart[bi]: allBins$chromEnd[bi]]>0)
         allBins$lowExpGenes[bi] <- sum(coverage.low.expr.genes[[paste0('chr', allBins$chr[bi])]][allBins$chromStart[bi]: allBins$chromEnd[bi]]>0)
        

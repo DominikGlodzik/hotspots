@@ -12,7 +12,7 @@ normaliseVector <- function(v, refv=NULL) {
     } else {
         r <- (v - mean(refv, na.rm=TRUE))/sd(refv, na.rm=TRUE)
     }
-    r
+    return(r)
 }
 
 
@@ -20,7 +20,8 @@ normaliseVector <- function(v, refv=NULL) {
 binSize = 5e5
 prepareData <- TRUE
 if (prepareData) {
-	allBins <- prepareBinData()
+    print('Loading the data ...')
+	allBins <- prepareBinData(maxBins=1000)
 } else {
     load(paste0('../data/regressionData08.06-',binSize,'.RData'))
 }
@@ -49,6 +50,7 @@ for (vi in 1:length(model.variables)) {
 }
 
 # fit the regression model
+print('Fitting regression model...')
 formula.sv1 <- as.formula(paste('counts.sv1 ~ ' , paste(paste0(model.variables,'.norm'), collapse=' + ')))
 fm_nbin.sv1 <- glm.nb(formula.sv1 , data = bins.regression) # negative binomial fit
 
