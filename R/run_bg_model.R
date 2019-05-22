@@ -18,7 +18,7 @@ normaliseVector <- function(v, refv=NULL) {
 
 # define a data frame with relevant features
 binSize = 5e5
-prepareData <- TRUE
+prepareData <- FALSE
 if (prepareData) {
     print('Loading the data ...')
 	allBins <- prepareBinData(maxBins=1000)
@@ -30,6 +30,7 @@ if (prepareData) {
                                         # prepare bins for regression
 bins.regression <- subset(allBins, noNbases<0.1*binSize &
                               noCensusGenes==0 & !is.nan(meanCn))
+bins.regression <- allBins
 
 ### run the regression model
 # choose the variables
