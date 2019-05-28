@@ -3,7 +3,7 @@ prepareBinData <- function(maxBins=Inf,
 	bpList=NULL
 	) {
 	
-	# design the bins: 500kb bins every 250mb
+	# design the bins: 500kb bins 
     binList <- list()
     for (c in as.character(1:22)) {       
         chr.length <- seqlengths(Hsapiens)[[paste('chr',c,sep='')]]       
@@ -74,14 +74,20 @@ prepareBinData <- function(maxBins=Inf,
                      )
 	overlaps.rep.domains <- as.data.frame(findOverlaps(gr.allBins, gr.timing ))
 
+	# extract sequences of the bins, in preparation to count the non-mapping bases
+    #binSequences <-     as.character(getSeq(Hsapiens, paste0('chr',allBins$chr),
+    #                                        start=allBins$chromStart,
+    #                                        end=allBins$chromEnd))
+
 
 	covList <- list()
 	# all the other bed files
 	for (bi in 1:length(bedList)) {
+		print(names(bedList)[bi])
 		aBed <- read.table(bedList[bi])
 		colnames(aBed) <- c('chr', 'chromStart', 'chromEnd')
 		gr.bed <- GRanges(seqnames=Rle(paste0(aBed[,1])),
-                    ranges=IRanges(aBed[,2], aBed[,3]),
+                    ranges=IRanges(pmax(aBed[,2],1), aBed[,3]),
                     strand=rep(c("*"), nrow(aBed)),
                     seqlengths=seqlengths(Hsapiens)
                     )
@@ -91,9 +97,6 @@ prepareBinData <- function(maxBins=Inf,
         allBins[,names(bedList)[bi]] <- NA
 
 	}
-
-
-
 
 
 	# breakpoints
@@ -118,6 +121,9 @@ prepareBinData <- function(maxBins=Inf,
         if (nrow(matching.domains)>0) {
             allBins$medianRepTime[bi] <-  median(mcols(gr.timing[matching.domains$subjectHits,])$timing)
         }
+
+        # count the N bases
+        #allBins$noNbases[bi] <- str_count(binSequences[bi],'N')
 
         # loop over the other bed files
        	for (bl in 1:length(bedList)) {
