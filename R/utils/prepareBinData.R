@@ -1,7 +1,10 @@
 prepareBinData <- function(maxBins=Inf,
 	bedList=c(), # vector of paths to bed files, with names of variables
-	bpList=NULL
-	) {
+	bpList=NULL,
+	cnDf=NULL,
+	repTimingBed=NULL,
+    genes.high.expr=NULL,
+    genes.low.expr=NULL) {
 	
 	# design the bins: 500kb bins 
     binList <- list()
@@ -12,9 +15,6 @@ prepareBinData <- function(maxBins=Inf,
         binList[[c]] <- data.frame(chr=c, chromStart=binStarts, chromEnd=binEnds)
     }
     allBins <- do.call('rbind', binList)
-    allBins$highExpGenes <-  rep(NA, nrow(allBins))
-    allBins$lowExpGenes <-  rep(NA, nrow(allBins))
-    allBins$medianRepTime <- rep(NA, nrow(allBins))
 
     gr.allBins <- GRanges(seqnames=Rle(paste0('chr',allBins$chr)),
                           ranges=IRanges(allBins$chromStart, allBins$chromEnd),
@@ -26,33 +26,13 @@ prepareBinData <- function(maxBins=Inf,
 		gr.allBins <- gr.allBins[si,]
 	}
 
-    # load the list of genes first
-	load('../../../data/biomart.19.05.2016.RData') # incl. genes.table
 
-    # gene expression: highExpGenes', 'lowExpGenes'
-
-
-	if (!exists('expr.data')) {
-	    expr.matrix <- read.table('/nfs/cancer_archive04/dg17/BASIS/expression/FPKM/QuantNorm_log2_FPKM_n342.txt', header=TRUE, sep='\t')
-	    expr.matrix.raw <- expr.matrix[, 6:ncol(expr.matrix )]
-	    expr.matrix.raw.t <- t(expr.matrix[, 6:ncol(expr.matrix )])
-	    colnames(expr.matrix.raw.t) <-  expr.matrix$Ensembl
-
-	    medianGeneExpression <- data.frame(EnsemblID=expr.matrix$Ensembl, medianExpression=apply(expr.matrix.raw.t, 2, median, na.rm=TRUE))
-	    medianGeneExpression <- subset(medianGeneExpression, !is.na(medianExpression))
-	    medianGeneExpression$exprQuantile <- with(medianGeneExpression, factor(findInterval(medianExpression, c(-Inf, quantile(medianExpression, probs=c(0.25, .5, .75)), Inf) ), labels=c("gene.expr.Q1","gene.expr.Q2","gene.expr.Q3","gene.expr.Q4")))
-	    
-	    
-	    genes.high.expr <- genes.table
-	    genes.high.expr <- subset(genes.high.expr,ensembl_gene_id %in% subset(medianGeneExpression, exprQuantile=="gene.expr.Q4")$EnsemblID)
-
+	if (!is.null(genes.high.expr) & !is.null(genes.low.expr)) {
 	    gr.highly.expr.genes <- GRanges(seqnames=Rle(paste0('chr', genes.high.expr$chr)),
 	                         ranges=IRanges(genes.high.expr$chromStart+1, genes.high.expr$chromEnd),
 	                         strand=rep(c("*"), nrow(genes.high.expr)) ,
 	                             seqlengths=seqlengths(Hsapiens)                        
 	                     )
-
-	    genes.low.expr <- subset(genes.table,ensembl_gene_id %in% subset(medianGeneExpression, exprQuantile!="gene.expr.Q4")$EnsemblID)
 	    gr.lowly.expr.genes <- GRanges(seqnames=Rle(paste0('chr', genes.low.expr$chr)),
 	                                    ranges=IRanges(genes.low.expr$chromStart+1, genes.low.expr$chromEnd),
 	                                    strand=rep(c("*"), nrow(genes.low.expr)) ,
@@ -61,23 +41,44 @@ prepareBinData <- function(maxBins=Inf,
 
 	    coverage.expr.genes <- coverage(gr.highly.expr.genes)
     	coverage.low.expr.genes <- coverage( gr.lowly.expr.genes)
+        allBins$highExpGenes <-  rep(NA, nrow(allBins))
+    	allBins$lowExpGenes <-  rep(NA, nrow(allBins))
 	}
 
     # replication timing: medianRepTime
-    rep.timing.df <- read.csv('/lustre/scratch116/casm/cgp/users/sm22/nfs/cancer_archive04/sm22/BASIS/Repliseq_data/RepliTime/MCF7_data/MCF7_RepliSeq.bedGraph', sep='\t', header=FALSE)
-	colnames(rep.timing.df) <- c('chr', 'chromStart', 'chromEnd', 'timing')
-	gr.timing <- GRanges(seqnames=Rle(paste0(rep.timing.df$chr)),
-                     ranges=IRanges(rep.timing.df$chromStart+1, rep.timing.df$chromEnd),
-                     strand=rep(c("*"), nrow(rep.timing.df )),
-                     timing=rep.timing.df$timing,
-                             seqlengths=seqlengths(Hsapiens)
-                     )
-	overlaps.rep.domains <- as.data.frame(findOverlaps(gr.allBins, gr.timing ))
+    if (!is.null(repTimingBed)) {
+    	rep.timing.df <- read.csv(repTimingBed, sep='\t', header=FALSE)
+		colnames(rep.timing.df) <- c('chr', 'chromStart', 'chromEnd', 'timing')
+		gr.timing <- GRanges(seqnames=Rle(paste0(rep.timing.df$chr)),
+        	             ranges=IRanges(rep.timing.df$chromStart+1, rep.timing.df$chromEnd),
+            	         strand=rep(c("*"), nrow(rep.timing.df )),
+                	     timing=rep.timing.df$timing,
+                    		         seqlengths=seqlengths(Hsapiens)
+                     	)
+		overlaps.rep.domains <- as.data.frame(findOverlaps(gr.allBins, gr.timing ))
+	    allBins$medianRepTime <- rep(NA, nrow(allBins))
+	}	
 
 	# extract sequences of the bins, in preparation to count the non-mapping bases
-    #binSequences <-     as.character(getSeq(Hsapiens, paste0('chr',allBins$chr),
-    #                                        start=allBins$chromStart,
-    #                                        end=allBins$chromEnd))
+    binSequences <-     as.character(getSeq(Hsapiens, paste0('chr',allBins$chr),
+                                            start=allBins$chromStart,
+                                            end=allBins$chromEnd))
+
+    # copy number data
+    if (!is.null(cnDf)) {
+    	gr.ascat <-  GRanges(seqnames=Rle(paste0(cnDf$Chromosome)),
+                      ranges=IRanges(cnDf$chromStart, cnDf$chromEnd),
+                      strand=rep(c("*"), nrow(cnDf)),
+                     seqlengths=seqlengths(Hsapiens),
+                     totalCn=cnDf$total.copy.number.inTumour
+                     )
+	    bin.midpoints <- rowMeans(allBins[,c('chromStart', 'chromEnd')])
+    	gr.bin.midpoints <- GRanges(seqnames=Rle(paste0('chr',allBins$chr)),
+                          ranges=IRanges(bin.midpoints , bin.midpoints ),
+                          strand=rep(c("*"), nrow(allBins)))
+    	cn.overlaps <- as.data.frame(findOverlaps(gr.bin.midpoints, gr.ascat))
+    	allBins$meanCn <- NA
+    }
 
 
 	covList <- list()
@@ -99,7 +100,7 @@ prepareBinData <- function(maxBins=Inf,
 	}
 
 
-	# breakpoints
+	# counting the breakpoints
 	if (!is.null(bpList)) {
 		# for all breakpoint lists
 		for (bps.i in 1:length(bpList)) {
@@ -111,19 +112,28 @@ prepareBinData <- function(maxBins=Inf,
 		}
 	}
 
-	# Ssummarize all bins
+	# summarize all bins
     for (bi in 1:min(maxBins,nrow(allBins))) {
     	print(bi)
-		allBins$highExpGenes[bi] <- sum(coverage.expr.genes [[paste0('chr', allBins$chr[bi])]][allBins$chromStart[bi]: allBins$chromEnd[bi]]>0)
-        allBins$lowExpGenes[bi] <- sum(coverage.low.expr.genes[[paste0('chr', allBins$chr[bi])]][allBins$chromStart[bi]: allBins$chromEnd[bi]]>0)
-       
+
+  		if (!is.null(genes.high.expr) & !is.null(genes.low.expr)) {
+			allBins$highExpGenes[bi] <- sum(coverage.expr.genes [[paste0('chr', allBins$chr[bi])]][allBins$chromStart[bi]: allBins$chromEnd[bi]]>0)
+    	    allBins$lowExpGenes[bi] <- sum(coverage.low.expr.genes[[paste0('chr', allBins$chr[bi])]][allBins$chromStart[bi]: allBins$chromEnd[bi]]>0)
+       	}
+
         matching.domains <- subset(overlaps.rep.domains, queryHits==bi)
         if (nrow(matching.domains)>0) {
             allBins$medianRepTime[bi] <-  median(mcols(gr.timing[matching.domains$subjectHits,])$timing)
         }
 
         # count the N bases
-        #allBins$noNbases[bi] <- str_count(binSequences[bi],'N')
+        allBins$noNbases[bi] <- str_count(binSequences[bi],'N')
+
+        # copy number
+        if (!is.null(cnDf)) {
+        	cn.overlaps.bin <- subset(cn.overlaps, queryHits==bi)
+        	allBins$meanCn[bi] <- mean(mcols(gr.ascat[cn.overlaps.bin$subjectHits,])$totalCn)
+        }
 
         # loop over the other bed files
        	for (bl in 1:length(bedList)) {
