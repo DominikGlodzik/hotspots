@@ -33,7 +33,7 @@ bedList <- c(            '../data/breastData/genes.high.expr.tsv',
 names(bedList) <- c('highExpGenes', 'lowExpGenes', 'dnase', 'staining', 'fragile', 'counts.alu', 'counts.rep','segDup' )
 
 # the following columns are required: c('chr', 'chromStart', 'chromEnd', 'timing')
-repTimingBed <- '../data/breastData/MCF7_RepliSeq.bedGraph'
+repTimingBed <- '../data/breastData/MCF7_RepliSeq.bedGraph.n1000'
 
 # load the breakpoints
 bps.sv1 <- read.csv('../data/breastData/bps.sv1.csv')
