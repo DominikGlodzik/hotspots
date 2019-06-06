@@ -18,56 +18,48 @@ normaliseVector <- function(v, refv=NULL) {
 
 # define a data frame with relevant features
 binSize = 5e5
-prepareData <- TRUE
-if (prepareData) {
-    print('Loading the data ...')
-    bedList <- c('/nfs/users/nfs_d/dg17/breast_rearr/data/metadata/dnase/MCF7DukeDNaseSeq.pk',
-                '/nfs/users/nfs_d/dg17/breast_rearr/data/chromBands/chromBandsPos',
-                '/nfs/users/nfs_d/dg17/breast_rearr/data/fragileSites/broadFragile37Chrom.txt',
-                '/nfs/users/nfs_d/dg17/breast_rearr/data/metadata/repeats/alu.repeatMasker',
-                '/nfs/users/nfs_d/dg17/breast_rearr/data/metadata/repeats/repeatMasker',
-                '/nfs/users/nfs_d/dg17/breast_rearr/data/metadata/segDup/GRCh37GenomicSuperDup.nohead.tab'
-        )
-    names(bedList) <- c('dnase', 'staining', 'fragile', 'counts.alu', 'counts.rep','segDup')
 
-    # the following columns are required: c('chr', 'chromStart', 'chromEnd', 'timing')
-    repTimingBed <- '/lustre/scratch116/casm/cgp/users/sm22/nfs/cancer_archive04/sm22/BASIS/Repliseq_data/RepliTime/MCF7_data/MCF7_RepliSeq.bedGraph'
 
-    # load the breakpoints
-    bps.sv1 < read.csv('../data/bps.sv1.csv')
-    bpList=list()
-    bpList[[1]] <- bps.sv1
-    names(bpList)[1] <- 'counts.sv1'
+print('Loading the data ...')
+bedList <- c(            '../data/breastData/genes.high.expr.tsv',
+            '../data/breastData/genes.low.expr.tsv',
+            '../data/breastData/MCF7DukeDNaseSeq.pk',
+            '../data/breastData/chromBandsPos',
+            '../data/breastData/broadFragile37Chrom.txt',
+            '../data/breastData/alu.repeatMasker',
+            '../data/breastData/repeatMasker',
+            '../data/breastData/GRCh37GenomicSuperDup.nohead.tab'
+    )
+names(bedList) <- c('highExpGenes', 'lowExpGenes', 'dnase', 'staining', 'fragile', 'counts.alu', 'counts.rep','segDup' )
 
-    # prepare the copy number data
-    # data frame with columns Chromosome chromStart  chromEnd  total.copy.number.inTumour
-    ascat.df <- read.csv('../data/ascat.df.csv')
+# the following columns are required: c('chr', 'chromStart', 'chromEnd', 'timing')
+repTimingBed <- '../data/breastData/MCF7_RepliSeq.bedGraph'
 
-    # process the gene expression data
-    genes.high.expr <- read.csv('../data/genes.high.expr.csv')
-    genes.low.expr <- read.csv('../data/genes.low.expr.csv')
+# load the breakpoints
+bps.sv1 <- read.csv('../data/breastData/bps.sv1.csv')
+bpList=list()
+bpList[[1]] <- bps.sv1
+names(bpList)[1] <- 'counts.sv1'
 
- 
+# prepare the copy number data
+# data frame with columns Chromosome chromStart  chromEnd  total.copy.number.inTumour
+ascat.df <- read.csv('../data/breastData/ascat.df.csv')
 
-	allBins <- prepareBinData(
-        maxBins=100, 
-        bedList=bedList, 
-        bpList=bpList, 
-        cnDf=ascat.df , 
-        repTimingBed=repTimingBed,
-        genes.high.expr=genes.high.expr,
-        genes.low.expr=genes.low.expr
-        )
+# process the gene expression data
 
-} else {
-    print('loading the example data')
-    load(paste0('../data/regressionData08.06-',binSize,'.RData'))
-}
 
-                                        # regression part
-                                        # prepare bins for regression
-#bins.regression <- subset(allBins, noNbases<0.1*binSize &
-#                              noCensusGenes==0 & !is.nan(meanCn))
+allBins <- prepareBinData(
+    maxBins=100, 
+    bedList=bedList, 
+    bpList=bpList, 
+    cnDf=ascat.df , 
+    repTimingBed=repTimingBed
+    )
+
+
+
+# regression part
+# prepare bins for regression
 bins.regression <- allBins
 
 ### run the regression model
