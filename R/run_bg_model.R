@@ -27,7 +27,7 @@ bedList <- c(            '../data/breastData/genes.high.expr.tsv',
             '../data/breastData/chromBandsPos',
             '../data/breastData/broadFragile37Chrom.txt',
             '../data/breastData/alu.repeatMasker',
-            '../data/breastData/repeatMasker',
+            '../data/breastData/repeatMasker1000',
             '../data/breastData/GRCh37GenomicSuperDup.nohead.tab'
     )
 names(bedList) <- c('highExpGenes', 'lowExpGenes', 'dnase', 'staining', 'fragile', 'counts.alu', 'counts.rep','segDup' )
