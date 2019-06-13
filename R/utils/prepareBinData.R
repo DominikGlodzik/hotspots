@@ -8,7 +8,7 @@ prepareBinData <- function(maxBins=Inf,
 	
 	# design the bins: 500kb bins 
     binList <- list()
-    for (c in as.character(1:22)) {       
+    for (c in c(as.character(1:22),'X')) {       
         chr.length <- seqlengths(Hsapiens)[[paste('chr',c,sep='')]]       
         binStarts <- seq(from=1, to=chr.length-5e5, by=binSize )
         binEnds <- binStarts + binSize-1
