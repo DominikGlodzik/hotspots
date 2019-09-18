@@ -1,4 +1,13 @@
-drawSegmentation <- function (rearr.df,  hotspots.df,  fn, main.text, chroms=as.character(1:22), xWindow=NULL, bp.col='aquamarine3', annot=NULL, hotspots=NULL) {
+drawSegmentation <- function (rearr.df,  
+                              hotspots.df,  
+                              fn, 
+                              main.text, 
+                              chroms=c(as.character(1:22), 'X'), 
+                              xWindow=NULL, 
+                              bp.col='aquamarine3', 
+                              annot=NULL, 
+                              hotspots=NULL
+                              ) {
 
                                         # Draw the rainfall plots for rearrangement breakpoints
                                         #   rearr.df: data frame with rearrangements, one rearrangement per row
@@ -10,6 +19,7 @@ drawSegmentation <- function (rearr.df,  hotspots.df,  fn, main.text, chroms=as.
     rearr.bps <- rbind(data.frame(sample=rearr.df$sample, chr=rearr.df$Chromosome.1, position=rearr.df$pos.1, pf=rearr.df$pf),
                        data.frame(sample=rearr.df$sample, chr=rearr.df$Chromosome.2, position=rearr.df$pos.2, pf=rearr.df$pf)
                        )
+    
     rearr.bps <- rearr.bps[order(rearr.bps$chr, rearr.bps$position),]
     
     intermut.dist <- calcIntermutDist(rearr.bps)
