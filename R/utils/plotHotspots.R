@@ -1,4 +1,22 @@
-plotHotspots <- function(hotspots_toplot, sv, window, gene_path = NULL, enhancer_path = NULL, driver_path = NULL){
+plotHotspots <- function(hotspots_toplot, sv, window = 500000, gene_path = NULL, enhancer_path = NULL, driver_path = NULL){
+    "
+    Utility function to visualize the SV breakpoint distribution in hotspots
+    Mandatory input:
+        hotspots_toplot: hotspot object from runLightPcf
+        sv: all the SV breakpoints to plot. Mandatory columns: sample, chrom1 (1, 2,.. X), pos1, chrom2, pos2, sv_pcawg
+            sv_pcawg should contain sv class annotations in the following categories: 
+            DEL, DUP, INV, TRA, Templated_insertion, Chromothripsis, Chromoplexy, Complex
+            window: number of bases to plot on either side of the hotspot margins
+
+    Optional annotation tracks:
+        gene_path: path to gene reference with the following mandatory columns: 
+            hg19.knownGene.chrom (chr1, chr2, ... chrX), hg19.knownGene.txStart (start pos), 
+            hg19.knownGene.txEnd (end pos), hg19.kgXref.geneSymbol (gene name to plot)
+        enhancer_path: path to enhancer bed file with the following columns (without headers):
+            chromosome (chr1, chr2, ... chrX), start position, end position
+        driver_path: path to driver gene list. Mandatory columns: 
+            gene (driver gene names corresponding to the names in gene_path)
+    "
     
     if(is.null(enhancer_path)){
         enhancer <- data.frame(chr = NA, start = NA, end = NA, driver = NA)
@@ -56,6 +74,13 @@ plotHotspots <- function(hotspots_toplot, sv, window, gene_path = NULL, enhancer
     colnames(sv2) <- colnames(sv1) <- c("sample","chr","pos", 'sv_pcawg')
     sv_comb <- rbind(sv1,sv2) %>%
         mutate(chr = paste0("chr", chr))
+    
+    ### PREPARE HOTSPOTS FOR PLOTTING
+    
+    hotspots_toplot <- mutate(hotspots_toplot,
+                              chr = paste0('chr', chr),
+                              start = start.bp - window, 
+                              end = end.bp + window)
     
     sv_hot_expl_fig <- list()
     for(i in 1:nrow(hotspots_toplot)){
