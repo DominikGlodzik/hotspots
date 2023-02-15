@@ -1,10 +1,10 @@
-prepareBinData <- function(maxBins=Inf,
+prepareBinData <- function(maxBins=Inf, # how many segments to downsample to
 	bedList=c(), # vector of paths to bed files, with names of variables
 	bpList=NULL,
 	cnDf=NULL,
 	repTimingBed=NULL,
     genes.high.expr=NULL,
-    genes.low.expr=NULL) {
+    genes.low.expr=NULL, addSummary=TRUE) {
 	
 	# design the bins: 500kb bins 
     binList <- list()
@@ -83,22 +83,23 @@ prepareBinData <- function(maxBins=Inf,
 
 	covList <- list()
 	# all the other bed files
-	for (bi in 1:length(bedList)) {
-		print(names(bedList)[bi])
-		aBed <- read.table(bedList[bi])
-		colnames(aBed) <- c('chr', 'chromStart', 'chromEnd')
-		gr.bed <- GRanges(seqnames=Rle(paste0(aBed[,1])),
-                    ranges=IRanges(pmax(aBed[,2],1), aBed[,3]),
-                    strand=rep(c("*"), nrow(aBed)),
-                    seqlengths=seqlengths(Hsapiens)
-                    )
-        coverage.bed <-coverage(gr.bed)
-        covList[[bi]] <- coverage.bed
+    if (length(bedList)>0) {
+        for (bi in 1:length(bedList)) {
+            print(names(bedList)[bi])
+            aBed <- read.table(bedList[bi])
+            colnames(aBed) <- c('chr', 'chromStart', 'chromEnd')
+            gr.bed <- GRanges(seqnames=Rle(paste0(aBed[,1])),
+                        ranges=IRanges(pmax(aBed[,2],1), aBed[,3]),
+                        strand=rep(c("*"), nrow(aBed)),
+                        seqlengths=seqlengths(Hsapiens)
+                        )
+            coverage.bed <-coverage(gr.bed)
+            covList[[bi]] <- coverage.bed
 
-        allBins[,names(bedList)[bi]] <- NA
+            allBins[,names(bedList)[bi]] <- NA
 
-	}
-
+        }
+    }
 
 	# counting the breakpoints
 	if (!is.null(bpList)) {
@@ -112,35 +113,46 @@ prepareBinData <- function(maxBins=Inf,
 		}
 	}
 
+    
 	# summarize all bins
-    for (bi in 1:min(maxBins,nrow(allBins))) {
-    	print(bi)
+    if (addSummary) {
 
-  		if (!is.null(genes.high.expr) & !is.null(genes.low.expr)) {
-			allBins$highExpGenes[bi] <- sum(coverage.expr.genes [[paste0('chr', allBins$chr[bi])]][allBins$chromStart[bi]: allBins$chromEnd[bi]]>0)
-    	    allBins$lowExpGenes[bi] <- sum(coverage.low.expr.genes[[paste0('chr', allBins$chr[bi])]][allBins$chromStart[bi]: allBins$chromEnd[bi]]>0)
-       	}
+        for (bi in 1:min(maxBins,nrow(allBins))) {
+            print(bi)
 
-        matching.domains <- subset(overlaps.rep.domains, queryHits==bi)
-        if (nrow(matching.domains)>0) {
-            allBins$medianRepTime[bi] <-  median(mcols(gr.timing[matching.domains$subjectHits,])$timing)
+            # is there an 'ovarlap function' for bin coverage?
+            if (!is.null(genes.high.expr) & !is.null(genes.low.expr)) {
+                allBins$highExpGenes[bi] <- sum(coverage.expr.genes [[paste0('chr', allBins$chr[bi])]][allBins$chromStart[bi]: allBins$chromEnd[bi]]>0)
+                allBins$lowExpGenes[bi] <- sum(coverage.low.expr.genes[[paste0('chr', allBins$chr[bi])]][allBins$chromStart[bi]: allBins$chromEnd[bi]]>0)
+            }
+
+            # overlap the bins with replication domains?
+            # mean by group?
+            matching.domains <- subset(overlaps.rep.domains, queryHits==bi)
+            if (nrow(matching.domains)>0) {
+                allBins$medianRepTime[bi] <-  median(mcols(gr.timing[matching.domains$subjectHits,])$timing)
+            }
+
+            # count the N bases
+            # cumulative count of N bases in the genome
+            allBins$noNbases[bi] <- str_count(binSequences[bi],'N')
+
+            # copy number
+            # count bin / cn segment overlaps
+            # take a mean by bin
+            if (!is.null(cnDf)) {
+                cn.overlaps.bin <- subset(cn.overlaps, queryHits==bi)
+                allBins$meanCn[bi] <- mean(mcols(gr.ascat[cn.overlaps.bin$subjectHits,])$totalCn)
+            }
+
+            # loop over the other bed files
+            # overlaps with each
+            for (bl in 1:length(bedList)) {
+                allBins[bi,names(bedList)[bl]] <-  sum(covList[[bl]][[paste0('chr', allBins$chr[bi])]][allBins$chromStart[bi]: allBins$chromEnd[bi]]>0)
+            }
         }
-
-        # count the N bases
-        allBins$noNbases[bi] <- str_count(binSequences[bi],'N')
-
-        # copy number
-        if (!is.null(cnDf)) {
-        	cn.overlaps.bin <- subset(cn.overlaps, queryHits==bi)
-        	allBins$meanCn[bi] <- mean(mcols(gr.ascat[cn.overlaps.bin$subjectHits,])$totalCn)
-        }
-
-        # loop over the other bed files
-       	for (bl in 1:length(bedList)) {
-       		allBins[bi,names(bedList)[bl]] <-  sum(covList[[bl]][[paste0('chr', allBins$chr[bi])]][allBins$chromStart[bi]: allBins$chromEnd[bi]]>0)
-       	}
-
     }
+
     return(allBins)
 
 }
